@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CredPeer - Peer-to-Peer Loan Lending System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- Persistent Top Header -->
+  <header class="sticky top-0 z-30 bg-white border-b border-slate-200 px-6 py-3.5 flex items-center justify-between shadow-sm">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-violet-700 text-white flex items-center justify-center font-extrabold text-lg shadow-sm">
+        🤝
+      </div>
+      <div>
+        <span class="text-xl font-extrabold tracking-tight text-slate-900">CredPeer</span>
+        <span class="hidden sm:inline-block ml-2 text-xs bg-violet-100 text-violet-800 px-2.5 py-0.5 rounded-full font-semibold">
+          P2P Lending Platform
+        </span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <!-- Role Switcher (Borrower vs Lender) -->
+      <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+        <button onclick="switchRole('borrower')" id="role-btn-borrower" class="px-3 py-1 rounded-lg text-xs font-bold transition bg-violet-700 text-white shadow-sm">
+          🙋‍♂️ Borrower View
+        </button>
+        <button onclick="switchRole('lender')" id="role-btn-lender" class="px-3 py-1 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">
+          💼 Lender / Investor
+        </button>
+      </div>
+
+      <!-- Notification Bell -->
+      <button onclick="switchTab('Notifications')" title="Notifications" class="relative p-2.5 rounded-full hover:bg-slate-100 border border-slate-200 transition">
+        🔔
+        <span id="notif-badge" class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-violet-700 text-white text-[10px] font-bold flex items-center justify-center">
+          2
+        </span>
+      </button>
+
+      <!-- Clickable Profile Avatar -->
+      <button onclick="switchTab('My Profile')" title="Open My Profile" class="flex items-center gap-3 p-1.5 pr-3.5 rounded-full hover:bg-slate-100 transition border border-slate-200 cursor-pointer">
+        <div id="header-initials" class="w-9 h-9 rounded-full bg-violet-700 text-white flex items-center justify-center font-bold text-sm">
+          JD
+        </div>
+        <div class="text-left hidden sm:block">
+          <p id="header-name" class="text-xs font-bold text-slate-800 leading-tight">Jayesh Deshmukh</p>
+          <p id="header-role-sub" class="text-[11px] text-violet-700 font-semibold">Credit Score: 745 (Low Risk)</p>
+        </div>
+      </button>
+    </div>
+  </header>
+
+  <!-- Toast Banner -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 hidden bg-slate-900 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium border border-slate-700"></div>
+
+  <!-- Main Body Layout -->
+  <div class="flex flex-1">
+    <!-- Left Sidebar -->
+    <aside class="w-64 bg-white border-r border-slate-200 p-4 hidden md:flex flex-col justify-between">
+      <nav id="sidebar-nav" class="space-y-1.5">
+        <!-- Populated dynamically based on role -->
+      </nav>
+
+      <div class="p-4 rounded-xl bg-violet-50 border border-violet-100 text-xs text-violet-900 space-y-2">
+        <p class="font-bold">⚡ P2P Direct Matching</p>
+        <p class="text-violet-700">Average loan funding time: Under 4 hours.</p>
+        <button onclick="openLoanModal()" class="w-full py-2 bg-violet-700 text-white rounded-lg font-semibold hover:bg-violet-800 transition">
+          + Request Loan
+        </button>
+      </div>
+    </aside>
+
+    <!-- Mobile Bottom Navigation -->
+    <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-20 flex overflow-x-auto p-2 gap-1" id="mobile-nav"></div>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 p-6 md:p-8 pb-20 md:pb-8 max-w-6xl mx-auto w-full">
+      <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-200 pb-4">
+        <div>
+          <h1 id="page-title" class="text-2xl font-bold text-slate-900">Borrower Dashboard</h1>
+          <p class="text-sm text-slate-500">Direct peer-to-peer financing, risk scoring, interest calculator, and EMI repayment tracking.</p>
+        </div>
+        <button onclick="openLoanModal()" class="px-4 py-2 rounded-xl bg-violet-700 text-white text-xs font-semibold hover:bg-violet-800 transition self-start sm:self-auto">
+          + Apply for New Loan
+        </button>
+      </div>
+
+      <!-- TAB 1: BORROWER DASHBOARD -->
+      <div id="tab-Borrower Dashboard" class="space-y-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <p class="text-xs font-bold text-slate-400 uppercase">Active Borrowings</p>
+            <p id="stat-borrowed" class="text-3xl font-extrabold text-slate-900 mt-1">₹50,000</p>
+            <p class="text-xs text-emerald-600 font-medium mt-1">1 active loan running</p>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <p class="text-xs font-bold text-slate-400 uppercase">Credit Score</p>
+            <p class="text-3xl font-extrabold text-violet-700 mt-1">745 <span class="text-xs font-normal text-emerald-600">(Low Risk)</span></p>
+            <p class="text-xs text-slate-500 mt-1">Verified via CIBIL API</p>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <p class="text-xs font-bold text-slate-400 uppercase">KYC Verification</p>
+            <p class="text-xl font-extrabold text-emerald-700 mt-1">Verified ✓</p>
+            <p class="text-xs text-slate-500 mt-1">Aadhaar & PAN matched</p>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <p class="text-xs font-bold text-slate-400 uppercase">Next EMI Due</p>
+            <p class="text-xl font-extrabold text-amber-600 mt-1">₹4,520</p>
+            <p class="text-xs text-slate-500 mt-1">Due on 5th Nov 2026</p>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <h2 class="text-lg font-bold text-slate-900 mb-4">Your Loan Applications & Repayments</h2>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr class="border-b border-slate-200 text-xs uppercase text-slate-400">
+                  <th class="py-3 px-4">Loan ID & Purpose</th>
+                  <th class="py-3 px-4">Principal & Interest</th>
+                  <th class="py-3 px-4">Monthly EMI</th>
+                  <th class="py-3 px-4">Risk Grade</th>
+                  <th class="py-3 px-4">Status & Action</th>
+                </tr>
+              </thead>
+              <tbody id="borrower-loans-tbody" class="divide-y divide-slate-200"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: LENDER / INVESTOR MARKETPLACE -->
+      <div id="tab-Lender Marketplace" class="hidden space-y-6">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <p class="text-xs font-bold text-slate-400 uppercase">Investor Wallet</p>
+            <p id="lender-wallet" class="text-3xl font-extrabold text-emerald-700 mt-1">₹2,50,000</p>
+            <p class="text-xs text-slate-500 mt-1">Available to fund loans</p>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <p class="text-xs font-bold text-slate-400 uppercase">Total Invested</p>
+            <p id="lender-invested" class="text-3xl font-extrabold text-violet-700 mt-1">₹1,20,000</p>
+            <p class="text-xs text-emerald-600 font-medium mt-1">Earning ~13.5% Avg Yield</p>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <p class="text-xs font-bold text-slate-400 uppercase">Interest Earned</p>
+            <p id="lender-earnings" class="text-3xl font-extrabold text-amber-600 mt-1">₹14,250</p>
+            <p class="text-xs text-slate-500 mt-1">Credited to wallet</p>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">P2P Loan Marketplace (Investor View)</h2>
+              <p class="text-xs text-slate-500">Browse verified borrower requests, review risk scores, and fund loans directly.</p>
+            </div>
+            <span class="text-xs bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-bold">Lender Mode Active</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr class="border-b border-slate-200 text-xs uppercase text-slate-400">
+                  <th class="py-3 px-4">Borrower & Purpose</th>
+                  <th class="py-3 px-4">Amount & Tenure</th>
+                  <th class="py-3 px-4">Interest Rate</th>
+                  <th class="py-3 px-4">Credit Score / Risk</th>
+                  <th class="py-3 px-4">Action / Fund</th>
+                </tr>
+              </thead>
+              <tbody id="marketplace-tbody" class="divide-y divide-slate-200"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: INTEREST CALCULATOR & RISK DASHBOARD -->
+      <div id="tab-Interest & Risk Calculator" class="hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <h2 class="text-lg font-bold text-slate-900">P2P Loan & EMI Calculator</h2>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Loan Amount (₹)</label>
+              <input type="number" id="calc-amt" value="50000" min="5000" step="5000" oninput="calculateEMI()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Interest Rate (% p.a.)</label>
+                <input type="number" id="calc-rate" value="12" min="8" max="24" step="0.5" oninput="calculateEMI()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Tenure (Months)</label>
+                <input type="number" id="calc-months" value="12" min="3" max="36" step="3" oninput="calculateEMI()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold" />
+              </div>
+            </div>
+
+            <div class="p-5 rounded-2xl bg-violet-50 border border-violet-200 space-y-2">
+              <div class="flex justify-between text-sm"><span class="text-slate-600">Monthly EMI:</span><strong id="res-emi" class="text-violet-700 text-lg">₹4,442</strong></div>
+              <div class="flex justify-between text-sm"><span class="text-slate-600">Total Interest Payable:</span><strong id="res-interest" class="text-slate-900">₹3,304</strong></div>
+              <div class="flex justify-between text-sm border-t border-violet-200 pt-2"><span class="text-slate-600">Total Payment (Principal + Interest):</span><strong id="res-total" class="text-emerald-700 text-base">₹53,304</strong></div>
+            </div>
+          </div>
+
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <h2 class="text-lg font-bold text-slate-900">AI Risk Scoring Matrix</h2>
+            <p class="text-xs text-slate-500">CredPeer algorithms evaluate alternative data, bank statements, and stability metrics:</p>
+            <div class="space-y-3 text-xs">
+              <div class="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50 flex items-center justify-between">
+                <div><strong class="text-emerald-900 text-sm">Low Risk (Grade A)</strong><p class="text-emerald-700 mt-0.5">Score 750+ • 10% - 12% Interest Rate</p></div>
+                <span class="px-2.5 py-1 rounded-full bg-emerald-600 text-white font-bold">Prime</span>
+              </div>
+              <div class="p-3.5 rounded-xl border border-amber-200 bg-amber-50 flex items-center justify-between">
+                <div><strong class="text-amber-900 text-sm">Medium Risk (Grade B)</strong><p class="text-amber-700 mt-0.5">Score 650 - 749 • 13% - 16% Interest Rate</p></div>
+                <span class="px-2.5 py-1 rounded-full bg-amber-600 text-white font-bold">Standard</span>
+              </div>
+              <div class="p-3.5 rounded-xl border border-rose-200 bg-rose-50 flex items-center justify-between">
+                <div><strong class="text-rose-900 text-sm">High Risk (Grade C)</strong><p class="text-rose-700 mt-0.5">Score &lt; 650 • 17% - 22% Interest Rate</p></div>
+                <span class="px-2.5 py-1 rounded-full bg-rose-600 text-white font-bold">Subprime</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: NOTIFICATIONS -->
+      <div id="tab-Notifications" class="hidden space-y-4">
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-bold text-slate-900">Real-Time P2P Notifications</h2>
+            <button onclick="markNotificationsRead()" class="text-xs font-bold text-violet-700 hover:underline">Mark All as Read</button>
+          </div>
+          <div id="notifications-list" class="space-y-3"></div>
+        </div>
+      </div>
+
+      <!-- TAB 5: MY PROFILE -->
+      <div id="tab-My Profile" class="hidden">
+        <div class="max-w-xl bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-4">
+              <div id="profile-avatar" class="w-14 h-14 rounded-full bg-violet-700 text-white flex items-center justify-center font-bold text-xl">
+                JD
+              </div>
+              <div>
+                <h2 id="profile-display-name" class="text-xl font-bold text-slate-900">Jayesh Deshmukh</h2>
+                <p id="profile-display-role" class="text-xs text-violet-700 font-bold">Verified Borrower & Lender • CIBIL 745</p>
+              </div>
+            </div>
+            <button onclick="toggleProfileEdit(true)" id="edit-profile-btn" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-800 text-xs font-semibold hover:bg-slate-200">
+              Edit Profile
+            </button>
+          </div>
+
+          <div id="profile-view-mode" class="space-y-3 text-sm border-t border-slate-200 pt-4">
+            <div class="flex justify-between py-1.5"><span class="text-slate-500">Full Name:</span><span id="pv-name" class="font-semibold">Jayesh Deshmukh</span></div>
+            <div class="flex justify-between py-1.5"><span class="text-slate-500">Credit Score:</span><span class="font-bold text-emerald-700">745 (Low Risk)</span></div>
+            <div class="flex justify-between py-1.5"><span class="text-slate-500">PAN & Aadhaar KYC:</span><span class="font-semibold text-emerald-600">Verified ✓</span></div>
+            <div class="flex justify-between py-1.5"><span class="text-slate-500">Phone Number:</span><span id="pv-phone" class="font-semibold">+91 98765 43210</span></div>
+            <div class="flex justify-between py-1.5"><span class="text-slate-500">Email:</span><span id="pv-email" class="font-semibold">jayesh@college.edu</span></div>
+          </div>
+
+          <form id="profile-edit-mode" onsubmit="saveProfile(event)" class="hidden space-y-4 border-t border-slate-200 pt-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Full Name</label>
+              <input type="text" id="pe-name" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Phone Number</label>
+              <input type="text" id="pe-phone" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Email Address</label>
+              <input type="email" id="pe-email" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
+            </div>
+            <div class="flex gap-3 pt-2">
+              <button type="submit" class="px-5 py-2.5 bg-violet-700 text-white rounded-xl text-sm font-semibold hover:bg-violet-800">Save Changes</button>
+              <button type="button" onclick="toggleProfileEdit(false)" class="px-5 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-semibold">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: APPLY FOR NEW LOAN -->
+  <div id="loan-modal" class="fixed inset-0 z-50 hidden bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <h3 class="text-lg font-bold text-slate-900">Apply for P2P Loan</h3>
+        <button onclick="closeLoanModal()" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+      </div>
+      <form onsubmit="submitLoanApplication(event)" class="space-y-4 mt-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Loan Purpose</label>
+          <input type="text" id="loan-title" required placeholder="e.g., Higher Education / Laptop / Medical" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Amount (₹)</label>
+            <input type="number" id="loan-amount" min="5000" step="5000" required value="30000" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-bold" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Tenure (Months)</label>
+            <select id="loan-tenure" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold">
+              <option value="6">6 Months</option>
+              <option value="12" selected>12 Months</option>
+              <option value="24">24 Months</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Proposed Interest Rate (% p.a.)</label>
+          <input type="number" id="loan-rate" min="8" max="24" step="0.5" value="12.5" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="submit" class="flex-1 py-2.5 bg-violet-700 text-white rounded-xl text-sm font-bold hover:bg-violet-800 transition">Submit Loan Request</button>
+          <button type="button" onclick="closeLoanModal()" class="px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-semibold">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Application State
+    let currentUserRole = 'borrower'; // 'borrower' or 'lender'
+    let lenderWallet = 250000;
+    let lenderInvested = 120000;
+    let lenderEarnings = 14250;
+
+    let profile = {
+      name: 'Jayesh Deshmukh',
+      phone: '+91 98765 43210',
+      email: 'jayesh@college.edu'
+    };
+
+    let loans = [
+      {
+        id: 'LN-88102',
+        borrower: 'Jayesh Deshmukh',
+        purpose: 'MacBook Pro for Web Development',
+        principal: 50000,
+        rate: 12.0,
+        months: 12,
+        emi: 4442,
+        risk: 'Grade A (Low Risk)',
+        status: 'Active',
+        fundedBy: 'P2P Pool #4'
+      },
+      {
+        id: 'LN-88103',
+        borrower: 'Rohan Sharma',
+        purpose: 'Electric Scooter Purchase',
+        principal: 75000,
+        rate: 14.5,
+        months: 18,
+        emi: 4890,
+        risk: 'Grade B (Medium Risk)',
+        status: 'Pending Funding',
+        fundedBy: null
+      },
+      {
+        id: 'LN-88104',
+        borrower: 'Ananya Verma',
+        purpose: 'Online Certification Course',
+        principal: 25000,
+        rate: 11.5,
+        months: 6,
+        emi: 4320,
+        risk: 'Grade A (Low Risk)',
+        status: 'Pending Funding',
+        fundedBy: null
+      }
+    ];
+
+    let notifications = [
+      { id: 1, title: 'Loan Successfully Funded!', message: 'Your loan request LN-88102 for ₹50,000 has been fully funded.', time: '2 days ago', unread: true },
+      { id: 2, title: 'Upcoming EMI Reminder', message: 'Your monthly EMI of ₹4,442 is due on 5th Nov 2026.', time: '1 day ago', unread: true }
+    ];
+
+    function formatINR(num) {
+      return '₹' + Number(num).toLocaleString('en-IN');
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.innerText = '✓ ' + msg;
+      t.classList.remove('hidden');
+      setTimeout(() => t.classList.add('hidden'), 3500);
+    }
+
+    // Role Switcher
+    function switchRole(role) {
+      currentUserRole = role;
+      document.getElementById('role-btn-borrower').className = `px-3 py-1 rounded-lg text-xs font-bold transition ${role === 'borrower' ? 'bg-violet-700 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`;
+      document.getElementById('role-btn-lender').className = `px-3 py-1 rounded-lg text-xs font-bold transition ${role === 'lender' ? 'bg-violet-700 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`;
+
+      if (role === 'lender') {
+        document.getElementById('header-role-sub').innerText = 'P2P Investor & Lender';
+        switchTab('Lender Marketplace');
+      } else {
+        document.getElementById('header-role-sub').innerText = 'Credit Score: 745 (Low Risk)';
+        switchTab('Borrower Dashboard');
+      }
+      renderNavigation();
+    }
+
+    function renderNavigation() {
+      const nav = document.getElementById('sidebar-nav');
+      const mobileNav = document.getElementById('mobile-nav');
+      let items = [];
+
+      if (currentUserRole === 'borrower') {
+        items = [
+          { name: 'Borrower Dashboard', icon: '📊' },
+          { name: 'Interest & Risk Calculator', icon: '🧮' },
+          { name: 'Notifications', icon: '🔔' },
+          { name: 'My Profile', icon: '👤' }
+        ];
+      } else {
+        items = [
+          { name: 'Lender Marketplace', icon: '💼' },
+          { name: 'Interest & Risk Calculator', icon: '🧮' },
+          { name: 'Notifications', icon: '🔔' },
+          { name: 'My Profile', icon: '👤' }
+        ];
+      }
+
+      nav.innerHTML = items.map(item => `
+        <button onclick="switchTab('${item.name}')" id="nav-${item.name}" class="w-full text-left px-4 py-3 rounded-xl font-semibold text-sm transition text-slate-600 hover:bg-slate-100 flex items-center gap-3">
+          <span>${item.icon}</span> ${item.name}
+        </button>
+      `).join('');
+
+      mobileNav.innerHTML = items.map(item => `
+        <button onclick="switchTab('${item.name}')" class="px-3 py-2 rounded-lg text-xs font-semibold bg-slate-100 whitespace-nowrap">${item.icon} ${item.name}</button>
+      `).join('');
+    }
+
+    function switchTab(tabName) {
+      ['Borrower Dashboard', 'Lender Marketplace', 'Interest & Risk Calculator', 'Notifications', 'My Profile'].forEach(t => {
+        const el = document.getElementById('tab-' + t);
+        if (el) el.classList.add('hidden');
+      });
+
+      const activeEl = document.getElementById('tab-' + tabName);
+      if (activeEl) activeEl.classList.remove('hidden');
+
+      document.getElementById('page-title').innerText = tabName;
+      renderAll();
+    }
+
+    // EMI Calculator Module
+    function calculateEMI() {
+      const p = Number(document.getElementById('calc-amt').value) || 0;
+      const annualRate = Number(document.getElementById('calc-rate').value) || 0;
+      const months = Number(document.getElementById('calc-months').value) || 12;
+
+      const r = annualRate / (12 * 100);
+      let emi = 0;
+      if (r === 0) {
+        emi = p / months;
+      } else {
+        emi = (p * r * Math.pow(1 + r, months)) / (Math.pow(1 + r, months) - 1);
+      }
+
+      const totalPayable = emi * months;
+      const totalInterest = totalPayable - p;
+
+      document.getElementById('res-emi').innerText = formatINR(Math.round(emi));
+      document.getElementById('res-interest').innerText = formatINR(Math.round(totalInterest));
+      document.getElementById('res-total').innerText = formatINR(Math.round(totalPayable));
+    }
+
+    // Modal
+    function openLoanModal() {
+      document.getElementById('loan-modal').classList.remove('hidden');
+    }
+    function closeLoanModal() {
+      document.getElementById('loan-modal').classList.add('hidden');
+    }
+
+    // Submit Loan Application
+    function submitLoanApplication(e) {
+      e.preventDefault();
+      const purpose = document.getElementById('loan-title').value.trim();
+      const principal = Number(document.getElementById('loan-amount').value);
+      const months = Number(document.getElementById('loan-tenure').value);
+      const rate = Number(document.getElementById('loan-rate').value);
+
+      const r = rate / (12 * 100);
+      const emi = Math.round((principal * r * Math.pow(1 + r, months)) / (Math.pow(1 + r, months) - 1));
+
+      const newLoan = {
+        id: 'LN-' + Math.floor(10000 + Math.random() * 90000),
+        borrower: profile.name,
+        purpose,
+        principal,
+        rate,
+        months,
+        emi,
+        risk: 'Grade A (Low Risk)',
+        status: 'Pending Funding',
+        fundedBy: null
+      };
+
+      loans.unshift(newLoan);
+      notifications.unshift({
+        id: Date.now(),
+        title: 'Loan Application Submitted',
+        message: `Your loan request for ${formatINR(principal)} (${purpose}) is listed on the P2P marketplace.`,
+        time: 'Just now',
+        unread: true
+      });
+
+      closeLoanModal();
+      document.getElementById('loan-title').value = '';
+      switchTab('Borrower Dashboard');
+      showToast('Loan application successfully listed for investors!');
+    }
+
+    // Lender Funding Action
+    function fundLoan(loanId) {
+      const loan = loans.find(l => l.id === loanId);
+      if (!loan) return;
+
+      if (lenderWallet < loan.principal) {
+        alert('Insufficient wallet balance to fund this loan!');
+        return;
+      }
+
+      lenderWallet -= loan.principal;
+      lenderInvested += loan.principal;
+      loan.status = 'Active';
+      loan.fundedBy = profile.name;
+
+      notifications.unshift({
+        id: Date.now(),
+        title: `Loan Funded Successfully (${loan.id})`,
+        message: `You successfully funded ${loan.borrower}'s loan of ${formatINR(loan.principal)} at ${loan.rate}% p.a.`,
+        time: 'Just now',
+        unread: true
+      });
+
+      showToast(`Successfully funded loan ${loan.id} for ${formatINR(loan.principal)}!`);
+      renderAll();
+    }
+
+    // Repay EMI Action
+    function repayEmi(loanId) {
+      const loan = loans.find(l => l.id === loanId);
+      if (loan) {
+        notifications.unshift({
+          id: Date.now(),
+          title: `EMI Payment Received (${loan.id})`,
+          message: `Monthly EMI of ${formatINR(loan.emi)} paid successfully.`,
+          time: 'Just now',
+          unread: true
+        });
+        showToast(`EMI of ${formatINR(loan.emi)} paid successfully!`);
+        renderAll();
+      }
+    }
+
+    function markNotificationsRead() {
+      notifications.forEach(n => n.unread = false);
+      renderAll();
+    }
+
+    function getInitials(name) {
+      return name.trim().split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'CP';
+    }
+
+    function toggleProfileEdit(editing) {
+      document.getElementById('profile-view-mode').classList.toggle('hidden', editing);
+      document.getElementById('profile-edit-mode').classList.toggle('hidden', !editing);
+      document.getElementById('edit-profile-btn').classList.toggle('hidden', editing);
+      if (editing) {
+        document.getElementById('pe-name').value = profile.name;
+        document.getElementById('pe-phone').value = profile.phone;
+        document.getElementById('pe-email').value = profile.email;
+      }
+    }
+
+    function saveProfile(e) {
+      e.preventDefault();
+      profile.name = document.getElementById('pe-name').value.trim();
+      profile.phone = document.getElementById('pe-phone').value.trim();
+      profile.email = document.getElementById('pe-email').value.trim();
+      toggleProfileEdit(false);
+      renderAll();
+      showToast('Profile updated successfully!');
+    }
+
+    function renderAll() {
+      const initials = getInitials(profile.name);
+      document.getElementById('header-initials').innerText = initials;
+      document.getElementById('profile-avatar').innerText = initials;
+      document.getElementById('header-name').innerText = profile.name;
+      document.getElementById('profile-display-name').innerText = profile.name;
+      document.getElementById('pv-name').innerText = profile.name;
+      document.getElementById('pv-phone').innerText = profile.phone;
+      document.getElementById('pv-email').innerText = profile.email;
+
+      // Stats
+      const activeBorrowed = loans.filter(l => l.borrower === profile.name && l.status === 'Active').reduce((sum, l) => sum + l.principal, 0);
+      document.getElementById('stat-borrowed').innerText = formatINR(activeBorrowed);
+      document.getElementById('lender-wallet').innerText = formatINR(lenderWallet);
+      document.getElementById('lender-invested').innerText = formatINR(lenderInvested);
+      document.getElementById('lender-earnings').innerText = formatINR(lenderEarnings);
+
+      // Borrower Loans Table
+      document.getElementById('borrower-loans-tbody').innerHTML = loans.filter(l => l.borrower === profile.name).map(l => `
+        <tr class="hover:bg-slate-50">
+          <td class="py-3.5 px-4"><p class="font-bold text-slate-900">${l.id} - ${l.purpose}</p><p class="text-xs text-slate-400">${l.months} Months tenure</p></td>
+          <td class="py-3.5 px-4"><p class="font-bold text-slate-900">${formatINR(l.principal)}</p><p class="text-xs text-violet-700">${l.rate}% p.a.</p></td>
+          <td class="py-3.5 px-4 font-bold text-slate-900">${formatINR(l.emi)}/mo</td>
+          <td class="py-3.5 px-4"><span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">${l.risk}</span></td>
+          <td class="py-3.5 px-4">
+            ${l.status === 'Active' ? `<button onclick="repayEmi('${l.id}')" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700">Pay EMI (${formatINR(l.emi)})</button>` : `<span class="text-xs font-bold text-amber-600">Pending Investor Funding</span>`}
+          </td>
+        </tr>
+      `).join('');
+
+      // Lender Marketplace Table
+      document.getElementById('marketplace-tbody').innerHTML = loans.map(l => `
+        <tr class="hover:bg-slate-50">
+          <td class="py-3.5 px-4"><p class="font-bold text-slate-900">${l.borrower}</p><p class="text-xs text-slate-500">${l.purpose}</p></td>
+          <td class="py-3.5 px-4"><p class="font-bold text-slate-900">${formatINR(l.principal)}</p><p class="text-xs text-slate-400">${l.months} Months</p></td>
+          <td class="py-3.5 px-4 font-bold text-violet-700">${l.rate}% p.a.</td>
+          <td class="py-3.5 px-4"><span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">${l.risk}</span></td>
+          <td class="py-3.5 px-4">
+            ${l.status === 'Active' ? `<span class="text-xs font-bold text-emerald-700">✓ Funded</span>` : `<button onclick="fundLoan('${l.id}')" class="px-3 py-1.5 bg-violet-700 text-white rounded-lg text-xs font-bold hover:bg-violet-800">Fund Loan Now</button>`}
+          </td>
+        </tr>
+      `).join('');
+
+      // Notifications
+      const unread = notifications.filter(n => n.unread).length;
+      const badge = document.getElementById('notif-badge');
+      badge.innerText = unread;
+      badge.classList.toggle('hidden', unread === 0);
+
+      document.getElementById('notifications-list').innerHTML = notifications.map(n => `
+        <div class="p-4 rounded-xl border flex items-start justify-between gap-4 ${n.unread ? 'bg-violet-50/60 border-violet-200' : 'bg-white border-slate-200'}">
+          <div>
+            <p class="text-sm font-bold text-slate-900">${n.title}</p>
+            <p class="text-xs text-slate-600 mt-1">${n.message}</p>
+          </div>
+          <span class="text-xs text-slate-400 whitespace-nowrap">${n.time}</span>
+        </div>
+      `).join('');
+    }
+
+    // Initial Load
+    renderNavigation();
+    calculateEMI();
+    renderAll();
+  </script>
+</body>
+</html>
